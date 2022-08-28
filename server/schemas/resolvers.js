@@ -1,25 +1,28 @@
 const { Book, User } = require('../models');
 const { signToken } = require('../utils/auth');
+
 const resolvers = {
   Query: {
-    getSingleUser((user = null, params)){
-      const foundUser = await User.findOne({
-        $or: [{ _id: user ? user._id : params.id }, { username: params.username }],
-      })
+    user: async () => {
+      return User.find({});
     },
-  book: async () => {
-    return Book.find({});
+    getSingleUser: (User, params) => {
+     const foundUser = User.findOne({
+    $or: [{ _id: user ? User._id : params.id },
+    { username: params.username }],
+  })
+},
+book: async () => {
+  return Book.find({});
+},
+  books: async (parent, { _id }) => {
+    const params = _id ? { _id } : {};
+    return Book.find(params);
   },
-    books: async (parent, { _id }) => {
-      const params = _id ? { _id } : {};
-      return Book.find(params);
-    },
 
-
-  },
-Mutation: {
+    Mutation: {
   createUser: ({ body }, res) => {
-    const user = await User.create(body);
+    const user =  User.create(body);
 
     if (!user) {
       return res.status(400).json({ message: 'Something is wrong!' });
@@ -28,12 +31,12 @@ Mutation: {
     res.json({ token, user });
   },
     login: ({ body }, res) => {
-      const user = await User.findOne({ $or: [{ username: body.username }, { email: body.email }] });
+      const user =  User.findOne({ $or: [{ username: body.username }, { email: body.email }] });
       if (!user) {
         return res.status(400).json({ message: "Can't find this user" });
       }
 
-      const correctPw = await user.isCorrectPassword(body.password);
+      const correctPw =  user.isCorrectPassword(body.password);
 
       if (!correctPw) {
         return res.status(400).json({ message: 'Wrong password!' });
@@ -45,7 +48,7 @@ Mutation: {
       saveBook: ({ user, body }, res) => {
         console.log(user);
         try {
-          const updatedUser = await User.findOneAndUpdate(
+          const updatedUser =  User.findOneAndUpdate(
             { _id: user._id },
             { $addToSet: { savedBooks: body } },
             { new: true, runValidators: true }
@@ -57,7 +60,7 @@ Mutation: {
         }
       },
         deleteBook: ({ user, params }, res) => {
-          const updatedUser = await User.findOneAndUpdate(
+          const updatedUser =  User.findOneAndUpdate(
             { _id: user._id },
             { $pull: { savedBooks: { bookId: params.bookId } } },
             { new: true }
@@ -68,6 +71,7 @@ Mutation: {
           return res.json(updatedUser);
         },
   },
+},
 };
 
 module.exports = resolvers;
